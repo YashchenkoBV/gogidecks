@@ -21,4 +21,4 @@ We plan to implement mutation and crossover as follows: the probability of trans
 ## Fitness function
 We don't have the exact fitness function yet - basically, its defining is the most hard and valuable part of the project. We think of experimenting with different ones during the implementation time, but some basic ideas could be found below:
 
-\[F = w_{atk}*atk + w_{def}*def + w_{syn}*syn + w_{vers}*vers + w_{mana}*mana\]
+$F = w_{atk} \cdot atk + w_{def} \cdot def + w_{syn} \cdot syn + w_{vers} \cdot vers + w_{mana} \cdot mana$
