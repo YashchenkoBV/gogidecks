@@ -14,4 +14,11 @@ Pic. 1 The example of Clash Royale deck (8 cards), in given case it contains 6 t
 There are 121 cards in total (as for Dec 2025, excluding different types of tower troops). For the evaluation purposes, we plan to manually grade the best proposed decks on the first stage (we are both Clash Royale players with more than 6 years of experience) or use RoyaleAPI (aggregating the results of matches and win-rates for the decks) afterwards.
 
 ## Encoding scheme
-Since each deck should contain exactly 8 cards, we plan to encode the deck as an eight-gene chromosome (one gene - one card). Noteworthy, the arrangement of cards inside of the deck doesn't change it, so for each deck there is 8! (= 40320) chromosomes corresponding to it.
+Since each deck should contain exactly 8 cards, we plan to encode the deck as an eight-gene chromosome (one gene - one card, encoded by a number from [121]). Noteworthy, the arrangement of cards inside of the deck doesn't change it, so for the sake of consistency, we will sort the genes in chromosome in ascending order (by card ID).
+
+We plan to implement mutation and crossover as follows: the probability of transition into the card assigned to the same class (e.g. spells, or tanks) is higher than the probability of transition into the card of different class (but the latter is strictly positive). We don't have the partition of the cards into those classes yet, but this part shouldn't take long (there are 8-10 classes expected).
+
+## Fitness function
+We don't have the exact fitness function yet - basically, its defining is the most hard and valuable part of the project. We think of experimenting with different ones during the implementation time, but some basic ideas could be found below:
+
+\[F = w_{atk}*atk + w_{def}*def + w_{syn}*syn + w_{vers}*vers + w_{mana}*mana\]
