@@ -7,4 +7,5 @@ Clash Royale is a real-time video game combining elements of collectible card ga
 Gogidecks suits only for building decks for regular 1v1 battle, consisting of 8 cards. Each card may be either a troop, a building or a spell. Each card costs defined amount of elixir (mana), and has its own unique values of attack, hp, and other characteristics (e.g. the unit may be on the ground or in the air). We don't account the level of cards.
 
 ![Best-Clash-Royale-arena-decks jpg](https://github.com/user-attachments/assets/29dca7b1-7926-4b95-bee3-b60a070c5dfc)
+
 Pic. 1 The example of Clash Royale deck (8 cards), in given case it contains 6 troops, 1 building and 1 spell (in this order)
