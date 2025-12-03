@@ -21,4 +21,17 @@ We plan to implement mutation and crossover as follows: the probability of trans
 ## Fitness function
 We don't have the exact fitness function yet - basically, its defining is the most hard and valuable part of the project. We think of experimenting with different ones during the implementation time, but some basic ideas could be found below:
 
-$F = w_{atk}atk + w_{def} \cdot def + w_{syn} \cdot syn + w_{vers} \cdot vers + w_{mana} \cdot mana$
+$F = w_{atk} \cdot atk + w_{def} \cdot def + w_{syn} \cdot syn + w_{vers} \cdot vers + w_{mana} \cdot mana$,
+
+where
+
+$atk = w_0 \cdot #tanks + w_1 \cdot #win_condition + w_2 \cdot #big_attacking_spells \cdot + w_3 \cdot #small_attacking_spells$,
+$def = w_4 \cdot #anti_air_units + w_5 \cdot #buildings + w_6 \cdot #swarms + w_7 \cdot #defense_spells + w_8 \cdot #anti_tank_units$,
+$syn = #pair_from_synergy_table$,
+$vers = #pair_from_versatility_table$,
+$mana = average_mana_cost$.
+
+For implementation of this fitness function, we would need to obtain a number of tables describing the relations between different cards. We plan to do so by web-scrapping from DeckShop - another web-tool for Clash Royale decks.
+
+The theoretic basis for this project was partly inspired by
+Deck Building in Collectible Card Games using Genetic Algorithms: A Case Study of Legends of Code and Magic, 2021 IEEE Symposium Series on Computational Intelligence (SSCI) | 978-1-7281-9048-8/21/$31.00 ©2021 IEEE | DOI: 10.1109/SSCI50451.2021.9659984
