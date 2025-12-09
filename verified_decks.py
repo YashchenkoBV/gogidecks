@@ -39,5 +39,14 @@ deck_scores = {
     ("bomber","dark-prince","giant","lightning","mega-minion","prince","rage","zap"): 0.608,
     ("baby-dragon","barbarians","dark-prince","mini-pekka","prince","skeleton-army","witch","wizard"): 0.336,
     ("bomber","dark-prince","fireball","giant","mega-minion","prince","rage","zap"): 0.553,
-    
+    ("arrows","bomber","elite-barbarians","golem","lumberjack","mega-minion","night-witch","zap"): 0.322,
+    ("dark-prince","electro-wizard","elite-barbarians","goblin-giant","heal-spirit","rage","sparky","zap"): 0.333,
+    ("elite-barbarians","elixir-collector","golden-knight","heal-spirit","ice-golem","royal-ghost","three-musketeers","zap"): 0.560,
+    ("bandit","elite-barbarians","elixir-collector","heal-spirit","ice-golem","royal-ghost","three-musketeers","zap"): 0.550,
+    ("dart-goblin","goblin-barrel","goblin-gang","ice-spirit","inferno-tower","knight","princess","the-log"): 0.561,
+    ("dart-goblin","electro-spirit","goblin-gang","mini-pekka","princess","skeleton-barrel","suspicious-bush","wall-breakers"): 0.561,
+    ("barbarian-barrel","cannon","earthquake","electro-spirit","firecracker","hog-rider","mighty-miner","skeletons"): 0.542,
+    ("cannon","goblin-barrel","goblins","ice-spirit","mighty-miner","princess","rocket","the-log"): 0.538,
+    ("arrows","bomber","electro-wizard","elixir-golem","firecracker","freeze","inferno-tower","mega-knight"): 0.233,
+    ("goblin-barrel","goblin-gang","ice-spirit","inferno-tower","princess","rocket","the-log","valkyrie"): 0.467
 }
