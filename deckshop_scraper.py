@@ -2,7 +2,7 @@
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import requests
@@ -42,12 +42,34 @@ def load_cards() -> Dict[str, dict]:
     if not isinstance(data, dict):
         raise SystemExit("cards.json must be an object {slug: {...}}")
 
-    return data
+    # Normalize: ensure each slug maps to a dict
+    normalized: Dict[str, dict] = {}
+    for slug, info in data.items():
+        if info is None:
+            info = {}
+        if not isinstance(info, dict):
+            info = {}
+        normalized[slug] = info
+
+    return normalized
 
 
-def save_cards(cards: Dict[str, dict]) -> None:
+def save_cards_minimal(cards: Dict[str, dict]) -> None:
+    """
+    Save only:
+      { slug: { "index": int, "cost": int or null } }
+    """
+    minimal: Dict[str, dict] = {}
+    for slug, info in cards.items():
+        idx = info.get("index")
+        cost = info.get("cost")
+        minimal[slug] = {
+            "index": int(idx) if idx is not None else None,
+            "cost": int(cost) if cost is not None else None,
+        }
+
     with CARDS_JSON.open("w", encoding="utf-8") as f:
-        json.dump(cards, f, indent=2, ensure_ascii=False)
+        json.dump(minimal, f, indent=2, ensure_ascii=False)
     print(f"Updated {CARDS_JSON.resolve()}")
 
 
@@ -87,7 +109,7 @@ def classify_section(tag: Tag, card_name: str) -> str:
 def iter_section_card_links(start_heading: Tag) -> List[Tag]:
     """
     Starting from a heading, walk following siblings until the next heading.
-    Collect all <a> tags that have data-id and href starting with /card/detail/.
+    Collect all <a> tags that have href starting with /card/detail/.
     """
     links: List[Tag] = []
 
@@ -98,7 +120,7 @@ def iter_section_card_links(start_heading: Tag) -> List[Tag]:
             if is_heading(sib):
                 break  # end of this section
 
-            for a in sib.find_all("a", attrs={"data-id": True}, href=True):
+            for a in sib.find_all("a", href=True):
                 href = a["href"]
                 if not href.startswith("/card/detail/"):
                     continue
@@ -127,6 +149,22 @@ def card_weight_from_link(a_tag: Tag) -> float:
     return 1.0
 
 
+def card_cost_from_link(a_tag: Tag) -> Optional[int]:
+    """
+    Try to get elixir cost from the <div data-elixir="X"> inside the link.
+    """
+    div = a_tag.find("div")
+    if not div:
+        return None
+    val = div.get("data-elixir")
+    if val is None:
+        return None
+    try:
+        return int(val)
+    except ValueError:
+        return None
+
+
 def slug_from_href(href: str) -> str:
     # e.g. /card/detail/barbarian-hut or /card/detail/barbarian-hut?foo=bar
     path = href.split("?", 1)[0]
@@ -143,8 +181,28 @@ def fetch_card_detail(session: requests.Session, slug: str) -> BeautifulSoup:
 
 def derive_card_name_from_slug(slug: str) -> str:
     # 'little-prince' -> 'Little Prince'
-    parts = slug.split("-")
-    return " ".join(p.capitalize() for p in parts)
+    return " ".join(part.capitalize() for part in slug.split("-"))
+
+
+def try_find_self_cost(soup: BeautifulSoup, card_name: str) -> Optional[int]:
+    """
+    Try to find the elixir cost for the card on its own detail page.
+    Strategy: look for any element with data-elixir whose descendant <img alt="">
+    matches the card name (case-insensitive).
+    """
+    name_lower = card_name.lower()
+    for el in soup.find_all(attrs={"data-elixir": True}):
+        val = el.get("data-elixir")
+        try:
+            cost = int(val)
+        except (TypeError, ValueError):
+            continue
+
+        img = el.find("img", alt=True)
+        if img and img["alt"].strip().lower() == name_lower:
+            return cost
+
+    return None
 
 
 def build_matrices(session: requests.Session, cards: Dict[str, dict]) -> Tuple[np.ndarray, np.ndarray]:
@@ -152,7 +210,7 @@ def build_matrices(session: requests.Session, cards: Dict[str, dict]) -> Tuple[n
     cards: {slug: {...}}
     returns:
       counter_matrix, synergy_matrix
-    and also updates cards[slug]["data_id"] when encountered.
+    also fills cards[slug]["index"] and cards[slug]["cost"] (if found).
     """
     slugs = sorted(cards.keys())
     n = len(slugs)
@@ -163,6 +221,7 @@ def build_matrices(session: requests.Session, cards: Dict[str, dict]) -> Tuple[n
         slug_to_index[slug] = idx
         entry = cards.setdefault(slug, {})
         entry["index"] = idx
+        # don't override cost here; we will fill/keep later
 
     counter_matrix = np.zeros((n, n), dtype=np.float32)
     synergy_matrix = np.zeros((n, n), dtype=np.float32)
@@ -172,10 +231,16 @@ def build_matrices(session: requests.Session, cards: Dict[str, dict]) -> Tuple[n
         i = slug_to_index[slug]
         entry = cards[slug]
         card_name = entry.get("name") or derive_card_name_from_slug(slug)
-        entry["name"] = card_name  # ensure name is present
+        # keep card_name local only; we don't save it
 
         soup = fetch_card_detail(session, slug)
         time.sleep(REQUEST_DELAY_SEC)
+
+        # Try to detect self cost from its own page
+        if entry.get("cost") is None:
+            self_cost = try_find_self_cost(soup, card_name)
+            if self_cost is not None:
+                entry["cost"] = self_cost
 
         for h in soup.find_all(is_heading):
             sec_type = classify_section(h, card_name)
@@ -190,23 +255,17 @@ def build_matrices(session: requests.Session, cards: Dict[str, dict]) -> Tuple[n
                 href = a.get("href") or ""
                 target_slug = slug_from_href(href)
                 if target_slug not in slug_to_index:
-                    # This target card is not in cards.json (yet) – ignore
+                    # This target card is not in cards.json – ignore
                     continue
 
                 j = slug_to_index[target_slug]
+                t_entry = cards.setdefault(target_slug, {})
 
-                # data-id on target
-                data_id = a.get("data-id")
-                if data_id is not None:
-                    try:
-                        did = int(data_id)
-                    except ValueError:
-                        did = None
-                    if did is not None:
-                        t_entry = cards.setdefault(target_slug, {})
-                        # don't overwrite if already set
-                        if "data_id" not in t_entry:
-                            t_entry["data_id"] = did
+                # Try to set cost for the target card from this link
+                if t_entry.get("cost") is None:
+                    c = card_cost_from_link(a)
+                    if c is not None:
+                        t_entry["cost"] = c
 
                 w = card_weight_from_link(a)
 
@@ -243,8 +302,8 @@ def main():
         f"with shape {synergy_matrix.shape}"
     )
 
-    # Save updated cards.json (with indices and discovered data_id)
-    save_cards(cards)
+    # Save updated cards.json with only index + cost
+    save_cards_minimal(cards)
 
 
 if __name__ == "__main__":
