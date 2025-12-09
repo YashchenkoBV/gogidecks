@@ -1,0 +1,606 @@
+{
+  "little-prince": {
+    "index": 67,
+    "data_id": 110,
+    "name": "Little Prince"
+  },
+  "golden-knight": {
+    "index": 52,
+    "data_id": 106,
+    "name": "Golden Knight"
+  },
+  "skeleton-king": {
+    "index": 101,
+    "data_id": 104,
+    "name": "Skeleton King"
+  },
+  "mighty-miner": {
+    "index": 72,
+    "data_id": 107,
+    "name": "Mighty Miner"
+  },
+  "archer-queen": {
+    "index": 0,
+    "name": "Archer Queen",
+    "data_id": 105
+  },
+  "goblinstein": {
+    "index": 51,
+    "data_id": 116,
+    "name": "Goblinstein"
+  },
+  "monk": {
+    "index": 78,
+    "data_id": 108,
+    "name": "Monk"
+  },
+  "boss-bandit": {
+    "index": 15,
+    "data_id": 119,
+    "name": "Boss Bandit"
+  },
+  "the-log": {
+    "index": 108,
+    "data_id": 57,
+    "name": "The Log"
+  },
+  "miner": {
+    "index": 73,
+    "data_id": 58,
+    "name": "Miner"
+  },
+  "princess": {
+    "index": 87,
+    "data_id": 59,
+    "name": "Princess"
+  },
+  "ice-wizard": {
+    "index": 61,
+    "data_id": 60,
+    "name": "Ice Wizard"
+  },
+  "royal-ghost": {
+    "index": 93,
+    "data_id": 81,
+    "name": "Royal Ghost"
+  },
+  "bandit": {
+    "index": 5,
+    "data_id": 71,
+    "name": "Bandit"
+  },
+  "fisherman": {
+    "index": 34,
+    "data_id": 94,
+    "name": "Fisherman"
+  },
+  "electro-wizard": {
+    "index": 26,
+    "data_id": 66,
+    "name": "Electro Wizard"
+  },
+  "inferno-dragon": {
+    "index": 62,
+    "data_id": 61,
+    "name": "Inferno Dragon"
+  },
+  "phoenix": {
+    "index": 84,
+    "data_id": 109,
+    "name": "Phoenix"
+  },
+  "magic-archer": {
+    "index": 69,
+    "data_id": 82,
+    "name": "Magic Archer"
+  },
+  "lumberjack": {
+    "index": 68,
+    "data_id": 62,
+    "name": "Lumberjack"
+  },
+  "night-witch": {
+    "index": 82,
+    "data_id": 73,
+    "name": "Night Witch"
+  },
+  "mother-witch": {
+    "index": 80,
+    "data_id": 102,
+    "name": "Mother Witch"
+  },
+  "ram-rider": {
+    "index": 89,
+    "data_id": 90,
+    "name": "Ram Rider"
+  },
+  "graveyard": {
+    "index": 54,
+    "data_id": 63,
+    "name": "Graveyard"
+  },
+  "goblin-machine": {
+    "index": 49,
+    "data_id": 114,
+    "name": "Goblin Machine"
+  },
+  "sparky": {
+    "index": 103,
+    "data_id": 64,
+    "name": "Sparky"
+  },
+  "spirit-empress": {
+    "index": 105,
+    "data_id": 120,
+    "name": "Spirit Empress"
+  },
+  "mega-knight": {
+    "index": 70,
+    "data_id": 76,
+    "name": "Mega Knight"
+  },
+  "lava-hound": {
+    "index": 65,
+    "data_id": 65,
+    "name": "Lava Hound"
+  },
+  "mirror": {
+    "index": 77,
+    "data_id": 37,
+    "name": "Mirror"
+  },
+  "barbarian-barrel": {
+    "index": 6,
+    "data_id": 83,
+    "name": "Barbarian Barrel"
+  },
+  "wall-breakers": {
+    "index": 115,
+    "data_id": 91,
+    "name": "Wall Breakers"
+  },
+  "goblin-curse": {
+    "index": 43,
+    "data_id": 112,
+    "name": "Goblin Curse"
+  },
+  "rage": {
+    "index": 88,
+    "data_id": 38,
+    "name": "Rage"
+  },
+  "goblin-barrel": {
+    "index": 41,
+    "data_id": 43,
+    "name": "Goblin Barrel"
+  },
+  "guards": {
+    "index": 55,
+    "data_id": 41,
+    "name": "Guards"
+  },
+  "skeleton-army": {
+    "index": 98,
+    "data_id": 42,
+    "name": "Skeleton Army"
+  },
+  "vines": {
+    "index": 113,
+    "data_id": 121,
+    "name": "Vines"
+  },
+  "clone": {
+    "index": 19,
+    "data_id": 39,
+    "name": "Clone"
+  },
+  "tornado": {
+    "index": 111,
+    "data_id": 40,
+    "name": "Tornado"
+  },
+  "void": {
+    "index": 114,
+    "data_id": 111,
+    "name": "Void"
+  },
+  "baby-dragon": {
+    "index": 3,
+    "data_id": 45,
+    "name": "Baby Dragon"
+  },
+  "dark-prince": {
+    "index": 20,
+    "data_id": 44,
+    "name": "Dark Prince"
+  },
+  "freeze": {
+    "index": 36,
+    "data_id": 46,
+    "name": "Freeze"
+  },
+  "poison": {
+    "index": 85,
+    "data_id": 47,
+    "name": "Poison"
+  },
+  "rune-giant": {
+    "index": 97,
+    "data_id": 117,
+    "name": "Rune Giant"
+  },
+  "hunter": {
+    "index": 58,
+    "data_id": 80,
+    "name": "Hunter"
+  },
+  "goblin-drill": {
+    "index": 45,
+    "data_id": 103,
+    "name": "Goblin Drill"
+  },
+  "witch": {
+    "index": 116,
+    "data_id": 50,
+    "name": "Witch"
+  },
+  "balloon": {
+    "index": 4,
+    "data_id": 51,
+    "name": "Balloon"
+  },
+  "prince": {
+    "index": 86,
+    "data_id": 49,
+    "name": "Prince"
+  },
+  "electro-dragon": {
+    "index": 23,
+    "data_id": 89,
+    "name": "Electro Dragon"
+  },
+  "bowler": {
+    "index": 16,
+    "data_id": 48,
+    "name": "Bowler"
+  },
+  "executioner": {
+    "index": 30,
+    "data_id": 68,
+    "name": "Executioner"
+  },
+  "cannon-cart": {
+    "index": 18,
+    "data_id": 75,
+    "name": "Cannon Cart"
+  },
+  "giant-skeleton": {
+    "index": 39,
+    "data_id": 52,
+    "name": "Giant Skeleton"
+  },
+  "lightning": {
+    "index": 66,
+    "data_id": 54,
+    "name": "Lightning"
+  },
+  "goblin-giant": {
+    "index": 47,
+    "data_id": 88,
+    "name": "Goblin Giant"
+  },
+  "x-bow": {
+    "index": 118,
+    "data_id": 53,
+    "name": "X Bow"
+  },
+  "pekka": {
+    "index": 83,
+    "data_id": 55,
+    "name": "Pekka"
+  },
+  "electro-giant": {
+    "index": 24,
+    "data_id": 100,
+    "name": "Electro Giant"
+  },
+  "golem": {
+    "index": 53,
+    "data_id": 56,
+    "name": "Golem"
+  },
+  "heal-spirit": {
+    "index": 56,
+    "data_id": 72,
+    "name": "Heal Spirit"
+  },
+  "ice-golem": {
+    "index": 59,
+    "data_id": 19,
+    "name": "Ice Golem"
+  },
+  "suspicious-bush": {
+    "index": 106,
+    "data_id": 115,
+    "name": "Suspicious Bush"
+  },
+  "tombstone": {
+    "index": 110,
+    "data_id": 20,
+    "name": "Tombstone"
+  },
+  "mega-minion": {
+    "index": 71,
+    "data_id": 21,
+    "name": "Mega Minion"
+  },
+  "dart-goblin": {
+    "index": 21,
+    "data_id": 67,
+    "name": "Dart Goblin"
+  },
+  "earthquake": {
+    "index": 22,
+    "data_id": 92,
+    "name": "Earthquake"
+  },
+  "elixir-golem": {
+    "index": 29,
+    "data_id": 95,
+    "name": "Elixir Golem"
+  },
+  "fireball": {
+    "index": 32,
+    "data_id": 23,
+    "name": "Fireball"
+  },
+  "mini-pekka": {
+    "index": 74,
+    "data_id": 26,
+    "name": "Mini Pekka"
+  },
+  "musketeer": {
+    "index": 81,
+    "data_id": 24,
+    "name": "Musketeer"
+  },
+  "goblin-cage": {
+    "index": 42,
+    "data_id": 93,
+    "name": "Goblin Cage"
+  },
+  "goblin-hut": {
+    "index": 48,
+    "data_id": 32,
+    "name": "Goblin Hut"
+  },
+  "valkyrie": {
+    "index": 112,
+    "data_id": 22,
+    "name": "Valkyrie"
+  },
+  "battle-ram": {
+    "index": 11,
+    "data_id": 69,
+    "name": "Battle Ram"
+  },
+  "bomb-tower": {
+    "index": 13,
+    "data_id": 30,
+    "name": "Bomb Tower"
+  },
+  "flying-machine": {
+    "index": 35,
+    "data_id": 77,
+    "name": "Flying Machine"
+  },
+  "hog-rider": {
+    "index": 57,
+    "data_id": 27,
+    "name": "Hog Rider"
+  },
+  "battle-healer": {
+    "index": 10,
+    "data_id": 96,
+    "name": "Battle Healer"
+  },
+  "furnace": {
+    "index": 37,
+    "data_id": 25,
+    "name": "Furnace"
+  },
+  "zappies": {
+    "index": 120,
+    "data_id": 79,
+    "name": "Zappies"
+  },
+  "goblin-demolisher": {
+    "index": 44,
+    "data_id": 113,
+    "name": "Goblin Demolisher"
+  },
+  "giant": {
+    "index": 38,
+    "data_id": 28,
+    "name": "Giant"
+  },
+  "inferno-tower": {
+    "index": 63,
+    "data_id": 31,
+    "name": "Inferno Tower"
+  },
+  "wizard": {
+    "index": 117,
+    "data_id": 29,
+    "name": "Wizard"
+  },
+  "royal-hogs": {
+    "index": 95,
+    "data_id": 86,
+    "name": "Royal Hogs"
+  },
+  "rocket": {
+    "index": 91,
+    "data_id": 33,
+    "name": "Rocket"
+  },
+  "barbarian-hut": {
+    "index": 7,
+    "data_id": 35,
+    "name": "Barbarian Hut"
+  },
+  "elixir-collector": {
+    "index": 28,
+    "name": "Elixir Collector"
+  },
+  "three-musketeers": {
+    "index": 109,
+    "data_id": 36,
+    "name": "Three Musketeers"
+  },
+  "skeletons": {
+    "index": 102,
+    "data_id": 2,
+    "name": "Skeletons"
+  },
+  "electro-spirit": {
+    "index": 25,
+    "data_id": 101,
+    "name": "Electro Spirit"
+  },
+  "fire-spirit": {
+    "index": 31,
+    "data_id": 5,
+    "name": "Fire Spirit"
+  },
+  "ice-spirit": {
+    "index": 60,
+    "data_id": 1,
+    "name": "Ice Spirit"
+  },
+  "goblins": {
+    "index": 50,
+    "data_id": 4,
+    "name": "Goblins"
+  },
+  "spear-goblins": {
+    "index": 104,
+    "data_id": 3,
+    "name": "Spear Goblins"
+  },
+  "bomber": {
+    "index": 14,
+    "data_id": 10,
+    "name": "Bomber"
+  },
+  "bats": {
+    "index": 9,
+    "data_id": 74,
+    "name": "Bats"
+  },
+  "zap": {
+    "index": 119,
+    "data_id": 6,
+    "name": "Zap"
+  },
+  "giant-snowball": {
+    "index": 40,
+    "data_id": 85,
+    "name": "Giant Snowball"
+  },
+  "berserker": {
+    "index": 12,
+    "data_id": 118,
+    "name": "Berserker"
+  },
+  "archers": {
+    "index": 1,
+    "data_id": 11,
+    "name": "Archers"
+  },
+  "arrows": {
+    "index": 2,
+    "data_id": 9,
+    "name": "Arrows"
+  },
+  "knight": {
+    "index": 64,
+    "data_id": 12,
+    "name": "Knight"
+  },
+  "minions": {
+    "index": 76,
+    "data_id": 8,
+    "name": "Minions"
+  },
+  "cannon": {
+    "index": 17,
+    "data_id": 7,
+    "name": "Cannon"
+  },
+  "goblin-gang": {
+    "index": 46,
+    "data_id": 70,
+    "name": "Goblin Gang"
+  },
+  "skeleton-barrel": {
+    "index": 99,
+    "data_id": 78,
+    "name": "Skeleton Barrel"
+  },
+  "firecracker": {
+    "index": 33,
+    "data_id": 97,
+    "name": "Firecracker"
+  },
+  "royal-delivery": {
+    "index": 92,
+    "data_id": 98,
+    "name": "Royal Delivery"
+  },
+  "skeleton-dragons": {
+    "index": 100,
+    "data_id": 99,
+    "name": "Skeleton Dragons"
+  },
+  "mortar": {
+    "index": 79,
+    "data_id": 14,
+    "name": "Mortar"
+  },
+  "tesla": {
+    "index": 107,
+    "data_id": 13,
+    "name": "Tesla"
+  },
+  "barbarians": {
+    "index": 8,
+    "data_id": 15,
+    "name": "Barbarians"
+  },
+  "minion-horde": {
+    "index": 75,
+    "data_id": 16,
+    "name": "Minion Horde"
+  },
+  "rascals": {
+    "index": 90,
+    "data_id": 84,
+    "name": "Rascals"
+  },
+  "royal-giant": {
+    "index": 94,
+    "data_id": 17,
+    "name": "Royal Giant"
+  },
+  "elite-barbarians": {
+    "index": 27,
+    "data_id": 18,
+    "name": "Elite Barbarians"
+  },
+  "royal-recruits": {
+    "index": 96,
+    "data_id": 87,
+    "name": "Royal Recruits"
+  }
+}
