@@ -1,4 +1,4 @@
-# ga_main.py
+# genalg_main.py
 
 from typing import Sequence, Tuple, List, Set
 import random
@@ -14,9 +14,9 @@ from fitness import (
 _cards, _slug_to_index = load_cards_and_indices()
 with open("classes.json", "r", encoding="utf-8") as f:
     _classes = json.load(f)
+
 _counter_matrix, _synergy_matrix = load_matrices()
 
-# Build inverse index -> slug mapping
 _index_to_slug = {idx: slug for slug, idx in _slug_to_index.items()}
 
 NUM_CARDS = len(_index_to_slug)
@@ -29,44 +29,45 @@ CLASS_LIMITS = {
     "building": 2,
 }
 
+
 # ============================================================
-# UTILITIES
+# Basic helpers
 # ============================================================
 
 def slugs_to_indices(slugs: Sequence[str]) -> List[int]:
-    """Convert list of card slugs to list of indices."""
+    """Convert card slugs to integer indices."""
     return [_slug_to_index[s] for s in slugs]
 
 
 def indices_to_slugs(indices: Sequence[int]) -> List[str]:
-    """Convert list of indices to list of slugs."""
+    """Convert integer indices to card slugs."""
     return [_index_to_slug[i] for i in indices]
 
 
 def normalize_chromosome(genes: Sequence[int]) -> Tuple[int, ...]:
     """
-    Enforce:
-    - unique genes
-    - sorted
-    - exactly DECK_SIZE cards
+    Normalize a chromosome:
+    - remove duplicates
+    - sort indices
+    - ensure deck size is exactly DECK_SIZE
     """
     unique_sorted = tuple(sorted(set(genes)))
-
     if len(unique_sorted) != DECK_SIZE:
-        raise ValueError(
-            f"Invalid chromosome size after normalization: {len(unique_sorted)} != {DECK_SIZE}"
-        )
-
+        raise ValueError("Invalid chromosome size")
     return unique_sorted
 
 
 def chromosome_is_valid(chromosome: Sequence[int]) -> bool:
+    """
+    Check hard constraints:
+    - obey CLASS_LIMITS
+    - all cards recognized
+    """
     slugs = indices_to_slugs(chromosome)
-
     class_counts = {}
 
     for slug in slugs:
-        card_class = _classes[slug]   # ✅ correct source
+        card_class = _classes[slug]   # correct source
         class_counts[card_class] = class_counts.get(card_class, 0) + 1
 
     for cls, limit in CLASS_LIMITS.items():
@@ -77,54 +78,64 @@ def chromosome_is_valid(chromosome: Sequence[int]) -> bool:
 
 
 def random_gene(exclude: Set[int] | None = None) -> int:
-    """Sample a random card index not in exclude."""
+    """
+    Sample a random card index, optionally excluding a given set.
+    """
     if exclude is None:
         return random.randrange(NUM_CARDS)
 
     candidates = [i for i in range(NUM_CARDS) if i not in exclude]
+    if not candidates:
+        raise RuntimeError("No available genes left to sample from.")
     return random.choice(candidates)
 
 
-def build_random_chromosome(forced_indices: Sequence[int] | None = None) -> Tuple[int, ...]:
+def build_random_chromosome(
+    forced_indices: Sequence[int] | None = None,
+) -> Tuple[int, ...]:
     """
-    Build a valid chromosome of length 8 while RESPECTING class limits during construction.
+    Build a random valid chromosome that:
+    - contains all forced_indices
+    - obeys CLASS_LIMITS
+    - has exactly DECK_SIZE unique cards
     """
     genes: Set[int] = set(forced_indices) if forced_indices else set()
 
-    # Count classes from forced cards
+    # Count the classes for forced genes
     class_counts = {}
     for idx in genes:
         slug = _index_to_slug[idx]
         cls = _classes[slug]
         class_counts[cls] = class_counts.get(cls, 0) + 1
 
-    if len(genes) > DECK_SIZE:
-        raise ValueError("Too many forced cards for one deck")
-
-    attempts = 0
-    MAX_ATTEMPTS = 200
-
     while len(genes) < DECK_SIZE:
-        attempts += 1
-        if attempts > MAX_ATTEMPTS:
-            # Restart completely if stuck
-            return build_random_chromosome(forced_indices)
-
         candidate = random_gene(exclude=genes)
         slug = _index_to_slug[candidate]
         cls = _classes[slug]
 
-        # ✅ CHECK LIMIT BEFORE ADDING
-        if class_counts.get(cls, 0) < CLASS_LIMITS.get(cls, DECK_SIZE):
-            genes.add(candidate)
-            class_counts[cls] = class_counts.get(cls, 0) + 1
+        # CHECK LIMIT BEFORE ADDING
+        if class_counts.get(cls, 0) >= CLASS_LIMITS.get(cls, DECK_SIZE):
+            continue
 
-    return normalize_chromosome(genes)
+        genes.add(candidate)
+        class_counts[cls] = class_counts.get(cls, 0) + 1
 
+    chrom = normalize_chromosome(genes)
+
+    if not chromosome_is_valid(chrom):
+        # If something went wrong (very unlikely), try again recursively
+        return build_random_chromosome(forced_indices)
+
+    return chrom
+
+
+# ============================================================
+# Fitness wrappers
+# ============================================================
 
 def chromosome_fitness(chromosome: Sequence[int]) -> float:
     """
-    Compute fitness directly from chromosome indices.
+    Compute scalar fitness for a chromosome (deck) using the deck_* logic.
     """
     slugs = indices_to_slugs(chromosome)
 
@@ -152,39 +163,12 @@ def chromosome_fitness_with_features(chromosome: Sequence[int]):
         _counter_matrix,
         _synergy_matrix,
     )
-
-    fitness = deck_fitness(features)
-    return fitness, features
-
-
-# ============================================================
-# INITIAL POPULATION
-# ============================================================
-
-def initial_population(pop_size: int, forced_slugs: Sequence[str] = ()) -> List[Tuple[int, ...]]:
-    forced_indices = slugs_to_indices(forced_slugs)
-    population: Set[Tuple[int, ...]] = set()
-
-    safeguard = 0
-    MAX_ATTEMPTS = pop_size * 200  # increased safely
-
-    while len(population) < pop_size and safeguard < MAX_ATTEMPTS:
-        chrom = build_random_chromosome(forced_indices)
-        population.add(chrom)
-        safeguard += 1
-
-    if len(population) < pop_size:
-        print(
-            f"⚠️ WARNING: Only {len(population)} unique valid decks could be generated "
-            f"with the given forced cards. Reducing population size accordingly."
-        )
-
-    return list(population)
-
+    fit = deck_fitness(features)
+    return fit, features
 
 
 # ============================================================
-# TOURNAMENT SELECTION
+# Selection, crossover, mutation
 # ============================================================
 
 def tournament_select(
@@ -193,19 +177,13 @@ def tournament_select(
     k: int,
 ) -> Tuple[int, ...]:
     """
-    Select one chromosome via k-way tournament.
+    k-way tournament selection.
+    Returns a parent chromosome.
     """
-    if k > len(population):
-        raise ValueError("Tournament size k cannot exceed population size")
-
-    competitors = random.sample(range(len(population)), k)
-    best_idx = max(competitors, key=lambda i: fitnesses[i])
-
+    indices = random.sample(range(len(population)), k)
+    best_idx = max(indices, key=lambda i: fitnesses[i])
     return population[best_idx]
 
-# ============================================================
-# CROSSOVER
-# ============================================================
 
 def uniform_crossover(
     parent1: Tuple[int, ...],
@@ -213,9 +191,10 @@ def uniform_crossover(
     forced_indices: Sequence[int] = (),
 ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
     """
-    Uniform set-based crossover with:
-    - equal probability from both parents
-    - second child gets the complement
+    Uniform crossover with set-based repair:
+    - build children from union of parent genes
+    - random selection until DECK_SIZE genes
+    - ensure validity
     - forced indices always preserved
     - hard constraint enforcement
     """
@@ -235,40 +214,28 @@ def uniform_crossover(
             c2 = build_random_chromosome(forced_indices)
             return c1, c2
 
-        # --- Child 1: 50/50 sampling from union ---
-        random.shuffle(union)
-        child1 = set(forced_set)
-        for gene in union:
-            if len(child1) >= DECK_SIZE:
+        # Start each child with forced genes
+        genes1 = set(forced_set)
+        genes2 = set(forced_set)
+
+        # Fill the rest randomly from union
+        shuffled = union[:]
+        random.shuffle(shuffled)
+
+        for g in shuffled:
+            if len(genes1) < DECK_SIZE:
+                genes1.add(g)
+            if len(genes2) < DECK_SIZE:
+                genes2.add(g)
+            if len(genes1) >= DECK_SIZE and len(genes2) >= DECK_SIZE:
                 break
-            if random.random() < 0.5:
-                child1.add(gene)
 
-        # Fill if short
-        while len(child1) < DECK_SIZE:
-            child1.add(random_gene(exclude=child1))
+        child1 = normalize_chromosome(genes1)
+        child2 = normalize_chromosome(genes2)
 
-        child1 = normalize_chromosome(child1)
-
-        # --- Child 2: complementary genes ---
-        child2 = set(forced_set)
-        for gene in union:
-            if gene not in child1 and len(child2) < DECK_SIZE:
-                child2.add(gene)
-
-        while len(child2) < DECK_SIZE:
-            child2.add(random_gene(exclude=child2))
-
-        child2 = normalize_chromosome(child2)
-
-        # --- Hard constraint enforcement ---
         if chromosome_is_valid(child1) and chromosome_is_valid(child2):
             return child1, child2
 
-
-# ============================================================
-# MUTATION
-# ============================================================
 
 def mutate(
     chromosome: Tuple[int, ...],
@@ -282,76 +249,75 @@ def mutate(
     - Replacement comes from same class with probability same_class_prob
     - Forced genes are NEVER mutated
     - Always normalized
-    - Always constraint-validated with regeneration fallback
+    - Always re-validated; if broken, rebuild a fresh random chromosome
     """
-
     forced_set = set(forced_indices)
     genes = list(chromosome)
 
-    attempts = 0
-    MAX_ATTEMPTS = 50
+    changed = False
 
-    while True:
-        attempts += 1
-        if attempts > MAX_ATTEMPTS:
-            # Emergency fallback: full random rebuild
-            return build_random_chromosome(forced_indices)
-
-        mutated = genes.copy()
-        used = set(mutated)
-
-        for i, gene in enumerate(mutated):
-
-            # --- Forced genes cannot mutate ---
-            if gene in forced_set:
-                continue
-
-            if random.random() < mutation_rate_gene:
-                slug = _index_to_slug[gene]
-                original_class = _classes[slug]
-
-                # --- Choose mutation class ---
-                if (
-                    random.random() < same_class_prob
-                    and original_class in CLASS_LIMITS
-                ):
-                    target_class = original_class
-                else:
-                    target_class = random.choice(list(CLASS_LIMITS.keys()))
-
-                # --- Candidate pool from desired class ---
-                candidates = [
-                    _slug_to_index[s]
-                    for s, cls in _classes.items()
-                    if cls == target_class and _slug_to_index[s] not in used
-                ]
-
-                # --- Fallback if class exhausted ---
-                if not candidates:
-                    candidates = [
-                        i for i in range(NUM_CARDS) if i not in used
-                    ]
-
-                new_gene = random.choice(candidates)
-
-                used.remove(gene)
-                used.add(new_gene)
-                mutated[i] = new_gene
-
-        # --- Normalize ---
-        try:
-            mutated_norm = normalize_chromosome(mutated)
-        except ValueError:
+    for i, old_gene in enumerate(genes):
+        if old_gene in forced_set:
             continue
 
-        # --- Enforce hard constraints ---
-        if chromosome_is_valid(mutated_norm):
-            return mutated_norm
+        if random.random() >= mutation_rate_gene:
+            continue
+
+        old_slug = _index_to_slug[old_gene]
+        old_class = _classes[old_slug]
+
+        if random.random() < same_class_prob:
+            candidates = [
+                idx
+                for idx, slug in _index_to_slug.items()
+                if _classes[slug] == old_class and idx not in genes
+            ]
+            if candidates:
+                new_gene = random.choice(candidates)
+            else:
+                new_gene = random_gene(exclude=set(genes))
+        else:
+            new_gene = random_gene(exclude=set(genes))
+
+        genes[i] = new_gene
+        changed = True
+
+    if not changed:
+        return chromosome
+
+    try:
+        mutated = normalize_chromosome(genes)
+    except ValueError:
+        return build_random_chromosome(forced_indices)
+
+    if not chromosome_is_valid(mutated):
+        return build_random_chromosome(forced_indices)
+
+    return mutated
 
 
 # ============================================================
-# GENETIC ALGORITHM LOOP
+# GA driver
 # ============================================================
+
+def initial_population(
+    pop_size: int,
+    forced_slugs: Sequence[str] = (),
+) -> List[Tuple[int, ...]]:
+    """
+    Create the initial population of size pop_size, each deck:
+    - obeys CLASS_LIMITS
+    - contains all forced_slugs
+    """
+    forced_indices = slugs_to_indices(forced_slugs)
+    population: List[Tuple[int, ...]] = []
+
+    while len(population) < pop_size:
+        chrom = build_random_chromosome(forced_indices)
+        population.append(chrom)
+
+    return population
+
 
 def run_ga(
     pop_size: int,
@@ -360,14 +326,14 @@ def run_ga(
     crossover_rate: float,
     mutation_rate_gene: float,
     same_class_prob: float,
-    elitism: int = 1,
+    elitism: int,
     forced_slugs: Sequence[str] = (),
     seed: int | None = None,
 ):
     """
-    Minimal, safe, readable GA loop.
+    Run the genetic algorithm.
+    Returns (final_population, final_fitnesses, best_chromosome, best_fitness).
     """
-
     if seed is not None:
         random.seed(seed)
 
@@ -394,7 +360,7 @@ def run_ga(
             reverse=True
         )[:elitism]
 
-        new_population = [population[i] for i in elite_indices]
+        new_population: List[Tuple[int, ...]] = [population[i] for i in elite_indices]
 
         # ---- Reproduction ----
         while len(new_population) < pop_size:
@@ -402,66 +368,46 @@ def run_ga(
             parent1 = tournament_select(population, fitnesses, tournament_k)
             parent2 = tournament_select(population, fitnesses, tournament_k)
 
-            # ---- Crossover ----
             if random.random() < crossover_rate:
-                child1, child2 = uniform_crossover(
-                    parent1, parent2, forced_indices
-                )
+                child1, child2 = uniform_crossover(parent1, parent2, forced_indices)
             else:
                 child1, child2 = parent1, parent2
 
-            # ---- Mutation ----
-            child1 = mutate(
-                child1,
-                mutation_rate_gene,
-                same_class_prob,
-                forced_indices,
-            )
+            child1 = mutate(child1, mutation_rate_gene, same_class_prob, forced_indices)
+            new_population.append(child1)
 
             if len(new_population) < pop_size:
-                new_population.append(child1)
-
-            if len(new_population) < pop_size:
-                child2 = mutate(
-                    child2,
-                    mutation_rate_gene,
-                    same_class_prob,
-                    forced_indices,
-                )
+                child2 = mutate(child2, mutation_rate_gene, same_class_prob, forced_indices)
                 new_population.append(child2)
 
-        # ---- Replace population ----
         population = new_population
         fitnesses = [chromosome_fitness(ch) for ch in population]
 
-        # ---- Track global best ----
-        gen_best_idx = max(range(len(population)), key=lambda i: fitnesses[i])
-        gen_best_fit = fitnesses[gen_best_idx]
+        current_best_idx = max(range(len(population)), key=lambda i: fitnesses[i])
+        current_best_fitness = fitnesses[current_best_idx]
 
-        if gen_best_fit > best_fitness:
-            best_fitness = gen_best_fit
-            best_chrom = population[gen_best_idx]
+        if current_best_fitness > best_fitness:
+            best_fitness = current_best_fitness
+            best_chrom = population[current_best_idx]
 
-        # ---- Logging ----
         print(f"Gen {gen} | Best fitness: {best_fitness:.4f}")
 
     return population, fitnesses, best_chrom, best_fitness
 
 
 # ============================================================
-# CLI ENTRY POINT
+# CLI front-end
 # ============================================================
 
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Genetic Algorithm Clash Royale Deck Builder")
-
-    parser.add_argument("--pop-size", type=int, default=200)
-    parser.add_argument("--generations", type=int, default=100)
-    parser.add_argument("--tournament-k", type=int, default=3)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pop-size", type=int, default=100)
+    parser.add_argument("--generations", type=int, default=200)
+    parser.add_argument("--tournament-k", type=int, default=20)
     parser.add_argument("--crossover-rate", type=float, default=0.9)
-    parser.add_argument("--mutation-rate", type=float, default=0.1)
+    parser.add_argument("--mutation-rate", type=float, default=0.05)
     parser.add_argument("--same-class-prob", type=float, default=0.8)
     parser.add_argument("--elitism", type=int, default=2)
     parser.add_argument("--seed", type=int, default=None)
@@ -488,24 +434,37 @@ def main():
         seed=args.seed,
     )
 
-    top3_idx = sorted(
+    # Select up to top 3 unique decks (by chromosome content)
+    sorted_indices = sorted(
         range(len(final_population)),
         key=lambda i: final_fitnesses[i],
         reverse=True
-    )[:3]
+    )
+
+    unique_best_indices = []
+    seen_chromosomes = set()
+
+    for idx in sorted_indices:
+        chrom = tuple(final_population[idx])
+        if chrom in seen_chromosomes:
+            continue
+        seen_chromosomes.add(chrom)
+        unique_best_indices.append(idx)
+        if len(unique_best_indices) >= 3:
+            break
 
     print("\n==============================")
-    print("🏆 TOP 3 DECKS FOUND")
+    print("TOP UNIQUE DECKS FOUND")
     print("==============================")
 
-    for rank, idx in enumerate(top3_idx, start=1):
+    for rank, idx in enumerate(unique_best_indices, start=1):
         chrom = final_population[idx]
         slugs = indices_to_slugs(chrom)
         fit = final_fitnesses[idx]
 
         print(f"\n#{rank}")
         print("Indices :", chrom)
-        print("Slugs   :", ", ".join(slugs))
+        print("Slugs   :", " ".join(slugs))
         print(f"Fitness : {fit:.4f}")
 
 

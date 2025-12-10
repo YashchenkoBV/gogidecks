@@ -1,164 +1,198 @@
-# cards_model.py
+# genalg_main.py
 
-from __future__ import annotations
-
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Sequence
-
+from typing import Sequence, Tuple, List, Set
+import random
 import json
 
+from fitness import (
+    load_cards_and_indices,
+    load_matrices,
+    deck_features_by_name,
+    deck_fitness,
+)
 
-@dataclass(frozen=True)
-class Card:
-    """Immutable representation of a Clash Royale card."""
-    index: int
-    slug: str
-    card_class: str  # e.g. "troop", "spell", "anti-building"
+_cards, _slug_to_index = load_cards_and_indices()
+with open("classes.json", "r", encoding="utf-8") as f:
+    _classes = json.load(f)
+_counter_matrix, _synergy_matrix = load_matrices()
 
-    cost: int
-    tank: float
-    air: float
-    close_combat: float
-    far_combat: float
-    win_condition: float
-    big_atk_spell: float
-    small_atk_spell: float
-    def_spell: float
-    anti_air: float
-    building: float
-    spawn: float
-    swarm: float
-    anti_swarm: float
-    anti_tank: float
+_index_to_slug = {idx: slug for slug, idx in _slug_to_index.items()}
 
+NUM_CARDS = len(_index_to_slug)
+DECK_SIZE = 8
 
-def _data_dir() -> Path:
-    # Assumes cards_model.py lives in the same directory as cards.json / classes.json
-    return Path(__file__).resolve().parent
+CLASS_LIMITS = {
+    "spell": 3,
+    "troop": 6,
+    "anti-building": 3,
+    "building": 2,
+}
 
 
-def _load_raw_json() -> tuple[Dict[str, dict], Dict[str, str]]:
-    cards_path = _data_dir() / "cards.json"
-    classes_path = _data_dir() / "classes.json"
-
-    with cards_path.open("r", encoding="utf-8") as f:
-        cards_raw: Dict[str, dict] = json.load(f)
-
-    with classes_path.open("r", encoding="utf-8") as f:
-        classes_raw: Dict[str, str] = json.load(f)
-
-    # Basic consistency checks
-    cards_slugs = set(cards_raw.keys())
-    classes_slugs = set(classes_raw.keys())
-
-    missing_classes = cards_slugs - classes_slugs
-    extra_classes = classes_slugs - cards_slugs
-
-    if missing_classes or extra_classes:
-        raise ValueError(
-            f"Inconsistent cards/classes JSON.\n"
-            f"Missing classes for: {sorted(missing_classes)}\n"
-            f"Extra classes for unknown cards: {sorted(extra_classes)}"
-        )
-
-    return cards_raw, classes_raw
-
-
-def _build_cards() -> List[Card]:
-    cards_raw, classes_raw = _load_raw_json()
-
-    cards: List[Card] = []
-    for slug, attrs in cards_raw.items():
-        card_class = classes_raw[slug]
-
-        card = Card(
-            index=attrs["index"],
-            slug=slug,
-            card_class=card_class,
-            cost=attrs["cost"],
-            tank=attrs["tank"],
-            air=attrs["air"],
-            close_combat=attrs["close-combat"],
-            far_combat=attrs["far-combat"],
-            win_condition=attrs["win-condition"],
-            big_atk_spell=attrs["big-atk-spell"],
-            small_atk_spell=attrs["small-atk-spell"],
-            def_spell=attrs["def-spell"],
-            anti_air=attrs["anti-air"],
-            building=attrs["building"],
-            spawn=attrs["spawn"],
-            swarm=attrs["swarm"],
-            anti_swarm=attrs["anti-swarm"],
-            anti_tank=attrs["anti-tank"],
-        )
-        cards.append(card)
-
-    # Sort by index and validate indices
-    cards.sort(key=lambda c: c.index)
-    indices = [c.index for c in cards]
-    expected = list(range(len(cards)))
-    if indices != expected:
-        raise ValueError(
-            f"Card indices are not contiguous 0..N-1. "
-            f"Got {indices[0]}..{indices[-1]} with gaps or duplicates."
-        )
-
-    return cards
-
-
-# ---- Global data structures ----
-
-ALL_CARDS: List[Card] = _build_cards()
-
-# Index-based lookups
-IDX2CARD: List[Card] = ALL_CARDS
-IDX2SLUG: List[str] = [c.slug for c in ALL_CARDS]
-
-# Slug-based lookups
-SLUG2CARD: Dict[str, Card] = {c.slug: c for c in ALL_CARDS}
-SLUG2IDX: Dict[str, int] = {c.slug: c.index for c in ALL_CARDS}
-
-# Class-based indices
-CLASS2INDICES: Dict[str, List[int]] = {}
-for card in ALL_CARDS:
-    CLASS2INDICES.setdefault(card.card_class, []).append(card.index)
-
-
-# ---- Helper functions ----
-
-def all_indices() -> range:
-    """Return a range over all valid card indices."""
-    return range(len(ALL_CARDS))
-
-
-def get_card_by_index(index: int) -> Card:
-    return IDX2CARD[index]
-
-
-def get_card_by_slug(slug: str) -> Card:
-    return SLUG2CARD[slug]
-
-
-def indices_to_slugs(indices: Sequence[int]) -> List[str]:
-    return [IDX2SLUG[i] for i in indices]
+ELITISM_K = 2
 
 
 def slugs_to_indices(slugs: Sequence[str]) -> List[int]:
-    return [SLUG2IDX[s] for s in slugs]
+    return [_slug_to_index[s] for s in slugs]
 
 
-__all__ = [
-    "Card",
-    "ALL_CARDS",
-    "IDX2CARD",
-    "SLUG2CARD",
-    "IDX2SLUG",
-    "SLUG2IDX",
-    "CLASS2INDICES",
-    "all_indices",
-    "get_card_by_index",
-    "get_card_by_slug",
-    "indices_to_slugs",
-    "slugs_to_indices",
-]
+def indices_to_slugs(indices: Sequence[int]) -> List[str]:
+    return [_index_to_slug[i] for i in indices]
+
+
+def normalize_chromosome(genes: Sequence[int]) -> Tuple[int, ...]:
+    unique_sorted = tuple(sorted(set(genes)))
+    if len(unique_sorted) != DECK_SIZE:
+        raise ValueError("Invalid chromosome size")
+    return unique_sorted
+
+
+def chromosome_is_valid(chromosome: Sequence[int]) -> bool:
+    slugs = indices_to_slugs(chromosome)
+    class_counts = {}
+
+    for slug in slugs:
+        cls = _classes[slug]
+        class_counts[cls] = class_counts.get(cls, 0) + 1
+
+    for cls, limit in CLASS_LIMITS.items():
+        if class_counts.get(cls, 0) > limit:
+            return False
+
+    for cls in CLASS_LIMITS.keys():
+        if class_counts.get(cls, 0) == 0:
+            return False
+
+    return True
+
+
+def random_gene(exclude: Set[int] | None = None) -> int:
+    if exclude is None:
+        return random.randrange(NUM_CARDS)
+
+    candidates = [i for i in range(NUM_CARDS) if i not in exclude]
+    return random.choice(candidates)
+
+
+def build_random_chromosome(forced_indices: Sequence[int] | None = None) -> Tuple[int, ...]:
+    genes: Set[int] = set(forced_indices) if forced_indices else set()
+
+    class_counts = {}
+    for idx in genes:
+        cls = _classes[_index_to_slug[idx]]
+        class_counts[cls] = class_counts.get(cls, 0) + 1
+
+    while len(genes) < DECK_SIZE:
+        candidate = random_gene(exclude=genes)
+        cls = _classes[_index_to_slug[candidate]]
+
+        if class_counts.get(cls, 0) < CLASS_LIMITS.get(cls, DECK_SIZE):
+            genes.add(candidate)
+            class_counts[cls] = class_counts.get(cls, 0) + 1
+
+    chrom = normalize_chromosome(genes)
+
+    if not chromosome_is_valid(chrom):
+        return build_random_chromosome(forced_indices)
+
+    return chrom
+
+
+def chromosome_fitness(chromosome: Sequence[int]) -> float:
+    slugs = indices_to_slugs(chromosome)
+    features = deck_features_by_name(
+        slugs,
+        _cards,
+        _slug_to_index,
+        _counter_matrix,
+        _synergy_matrix,
+    )
+    return deck_fitness(features)
+
+
+def initial_population(pop_size: int, forced_slugs: Sequence[str] = ()):
+    forced_indices = slugs_to_indices(forced_slugs)
+    population = []
+
+    while len(population) < pop_size:
+        c = build_random_chromosome(forced_indices)
+        population.append(c)
+
+    return population
+
+
+def tournament_select(population, fitnesses, k):
+    competitors = random.sample(range(len(population)), k)
+    best_idx = max(competitors, key=lambda i: fitnesses[i])
+    return population[best_idx]
+
+
+def uniform_crossover(parent1, parent2, forced_indices=()):
+    child1 = build_random_chromosome(forced_indices)
+    child2 = build_random_chromosome(forced_indices)
+    return child1, child2
+
+
+def mutate(chromosome, mrate, same_class_prob, forced_indices=()):
+    if random.random() < mrate:
+        return build_random_chromosome(forced_indices)
+    return chromosome
+
+
+# ✅ ✅ ✅ ELITIST GA LOOP
+def run_ga(
+    pop_size,
+    generations,
+    tournament_k,
+    crossover_rate,
+    mutation_rate_gene,
+    same_class_prob,
+    forced_slugs=(),
+    seed=None,
+):
+
+    if seed is not None:
+        random.seed(seed)
+
+    forced_indices = slugs_to_indices(forced_slugs)
+
+    population = initial_population(pop_size, forced_slugs)
+    fitnesses = [chromosome_fitness(c) for c in population]
+
+    for gen in range(generations):
+
+        # ✅ ✅ ✅ ELITISM
+        elite_indices = sorted(
+            range(len(population)),
+            key=lambda i: fitnesses[i],
+            reverse=True
+        )[:ELITISM_K]
+
+        new_population = [population[i] for i in elite_indices]
+
+        while len(new_population) < pop_size:
+
+            p1 = tournament_select(population, fitnesses, tournament_k)
+            p2 = tournament_select(population, fitnesses, tournament_k)
+
+            if random.random() < crossover_rate:
+                c1, c2 = uniform_crossover(p1, p2, forced_indices)
+            else:
+                c1, c2 = p1, p2
+
+            c1 = mutate(c1, mutation_rate_gene, same_class_prob, forced_indices)
+
+            if len(new_population) < pop_size:
+                new_population.append(c1)
+
+            if len(new_population) < pop_size:
+                c2 = mutate(c2, mutation_rate_gene, same_class_prob, forced_indices)
+                new_population.append(c2)
+
+        population = new_population
+        fitnesses = [chromosome_fitness(c) for c in population]
+
+        print(f"Gen {gen+1} | Best: {max(fitnesses):.4f}")
+
+    best_idx = max(range(len(population)), key=lambda i: fitnesses[i])
+    return population, fitnesses, population[best_idx], fitnesses[best_idx]
