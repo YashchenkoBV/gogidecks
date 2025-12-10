@@ -25,11 +25,11 @@ $F = w_{atk} \cdot atk + w_{def} \cdot def + w_{syn} \cdot syn + w_{vers} \cdot 
 
 where
 
-$atk = w_0 \cdot tanks + w_1 \cdot win_condition + w_2 \cdot big_attacking_spells \cdot + w_3 \cdot small_attacking_spells$,
-$def = w_4 \cdot anti_air_units + w_5 \cdot buildings + w_6 \cdot swarms + w_7 \cdot defense_spells + w_8 \cdot anti_tank_units$,
-$syn = pair_from_synergy_table$,
-$vers = pair_from_versatility_table$,
-$mana = average_mana_cost$.
+$atk = w_0 \cdot tanks + w_1 \cdot win-condition + w_2 \cdot big-attacking-spells \cdot + w_3 \cdot small-attacking-spells$,
+$def = w_4 \cdot anti-air-units + w_5 \cdot buildings + w_6 \cdot swarms + w_7 \cdot defense-spells + w_8 \cdot anti-tank-units$,
+$syn = pair-from-synergy-table$,
+$vers = pair-from-versatility-table$,
+$mana = average-mana-cost$.
 
 For implementation of this fitness function, we would need to obtain a number of tables describing the relations between different cards. We plan to do so by web-scrapping from DeckShop - another web-tool for Clash Royale decks.
 
