@@ -25,10 +25,10 @@ $F = w_{atk} \cdot atk + w_{def} \cdot def + w_{syn} \cdot syn + w_{vers} \cdot 
 
 where
 
-$atk = w_0 \cdot #tanks + w_1 \cdot #win_condition + w_2 \cdot #big_attacking_spells \cdot + w_3 \cdot #small_attacking_spells$,
-$def = w_4 \cdot #anti_air_units + w_5 \cdot #buildings + w_6 \cdot #swarms + w_7 \cdot #defense_spells + w_8 \cdot #anti_tank_units$,
-$syn = #pair_from_synergy_table$,
-$vers = #pair_from_versatility_table$,
+$atk = w_0 \cdot tanks + w_1 \cdot win_condition + w_2 \cdot big_attacking_spells \cdot + w_3 \cdot small_attacking_spells$,
+$def = w_4 \cdot anti_air_units + w_5 \cdot buildings + w_6 \cdot swarms + w_7 \cdot defense_spells + w_8 \cdot anti_tank_units$,
+$syn = pair_from_synergy_table$,
+$vers = pair_from_versatility_table$,
 $mana = average_mana_cost$.
 
 For implementation of this fitness function, we would need to obtain a number of tables describing the relations between different cards. We plan to do so by web-scrapping from DeckShop - another web-tool for Clash Royale decks.
@@ -94,3 +94,31 @@ It is immediately obvious that these weights are not reasonable. For one thing, 
 
 There are two main reasons why this approach failed. First, a set of 50 decks is far too small to be representative enough for a reliable regression model. Hand-picking more decks was not an option, as it would require many hours of manual work. Second, the deck quality landscape we are trying to model is likely too complex to be accurately approximated by a purely linear function.
 
+## Step 3.
+Because described above approaches couldn't work well enough (we check on both RoyaleAPI-based dataset with winrates and DeckShop evaluation data), we implemented non-linear logic and added hard-constaints (such as maximal number of cards assigned to some class). Fitness function was reworked to: 1) reward synergy and counter potential (linear combination of the number of pair in the deck also presented in the synergy table and the sum of number of cards countered by each of the cards in the deck - exactly this formulation, since it accounts possible overlaps), 2) punish unsufficient (by default, < 1) summary values of features such as tank, win-condition, anti-air etc., each by fixed value, 3) punish summary elixir cost if it is out of range - linear over margin value. So normal values of fitness function are small and positive. After that, genetic algorithm started to produce meaningful (in our opinion and by DeckShop evaluation) decks. Since the evaluation of fitness function by win rates failed, we decide to accept a new one without additional testing (however, we tuned the weights value).
+
+# Genetic algorithm details
+In the final version, genetic algorithm uses class-defined mutations (for any card to mutate the probability of mutation into the card of the same class ("troop", "spell", "building", "anti-building" - troop attacking only buildings) is significantly - 0.8 over 0.2 - higher than mutation into the card of other class). Noteworthy, mutation rate controls the probability to mutate for each of the cards in the deck. We used basic tournament scheme for crossover (no preferences here, equal probabilities for each card, each crossover results in two children) and elitism (by default, 2 best chromosomes pass the generation). Obviously, we also applied non-redundancy constraint - a process resulting in the presence of more that one identical card in the same deck cannot happen. For the purpose of tuning the parameters of the genetic algorithm itself, we evaluated it on the benchmark (benchmark/ga_benchmark.py, measures k-size, population size, mutation rate) and set the best parameters by default.
+
+# Use
+To use the project, please install the requirements. Genetic algorithm could be launched by
+```
+python3 src/genalg_main.py [--force [card slugs divided by space]] [parameters affecting algorithm]
+python3 src/genalg_main.py --force hog-rider mega-knight --pop-size 200
+```
+
+You can also check the fitness function value for any set of cards (even not of size 8):
+```
+python3 src/fitness.py mega-knight mighty-miner
+```
+
+For the convinience of checking counter and synergy data we wrote simple script, launched by:
+```
+python3 benchmark/check_npy.py data/[counter_matrix.npy or synergy_matrix.npy] [card-slug-1 card-slug-2]
+python3 benchmark/check_npy.py data/counter_matrix.npy valkyrie skeleton-army
+```
+
+Benchmark could be launched with any genalg_main.py parameters, e.g.:
+```
+python3 benchmark/ga_benchmark.py --force minion-horde --crossover-rate 0.7
+```
