@@ -11,7 +11,7 @@ SYNERGY_MATRIX_NPY = Path("synergy_matrix.npy")
 
 # Fixed core weights
 WEIGHTS = {
-    "cost": -0.1875,
+    "cost": -1,
     "tank": 1.5,
     "air": 1.0,
     "close-combat": 2.0,
@@ -151,7 +151,7 @@ def deck_fitness(feature_dict):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python fitness.py card_slug1 card_slug2 ...")
+        print("Usage: python fitness_linear.py card_slug1 card_slug2 ...")
         sys.exit(1)
 
     deck = sys.argv[1:]  # list of slugs from command line
