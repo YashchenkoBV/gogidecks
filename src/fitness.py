@@ -2,10 +2,14 @@ import json
 from pathlib import Path
 import numpy as np
 import sys
+from pathlib import Path
 
-CARDS_JSON = Path("cards.json")
-COUNTER_MATRIX_NPY = Path("counter_matrix.npy")
-SYNERGY_MATRIX_NPY = Path("synergy_matrix.npy")
+BASE_DIR = Path(__file__).resolve().parent.parent  # gogidecks/
+DATA_DIR = BASE_DIR / "data"
+
+CARDS_JSON = DATA_DIR / "cards.json"
+COUNTER_MATRIX_NPY = DATA_DIR / "counter_matrix.npy"
+SYNERGY_MATRIX_NPY = DATA_DIR / "synergy_matrix.npy"
 
 
 # These weights define ONLY what is being optimized

@@ -13,10 +13,20 @@ and plots best fitness over generations for each setting.
 import argparse
 import random
 from typing import Sequence, Tuple, List
+import os
+import sys
 
 import matplotlib.pyplot as plt
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_path = os.path.join(current_dir, "..", "src")
+sys.path.append(src_path)
+
 import genalg_main as ga
+
+
+# how many independent runs per hyperparameter setting
+N_RUNS = 10
 
 
 # ------------------------------------------------------------
@@ -110,7 +120,7 @@ def main():
     parser.add_argument("--same-class-prob", type=float, default=0.8, help="Same class mutation probability")
     parser.add_argument("--crossover-rate", type=float, default=0.9, help="Crossover rate")
     parser.add_argument("--elitism", type=int, default=2, help="Number of elites to keep each generation")
-    parser.add_argument("--seed", type=int, default=42, help="Base random seed for reproducibility")
+    parser.add_argument("--seed", type=int, default=23, help="Base random seed for reproducibility")
     parser.add_argument(
         "--force",
         nargs="*",
@@ -148,24 +158,50 @@ def main():
 
     base_seed = args.seed
 
+    # ---------------- helper: average multiple runs ----------------
+    def average_best_over_runs(seed_offset_base: int, run_kwargs: dict) -> List[float]:
+        """
+        Run the experiment N_RUNS times with different seeds and
+        return the average best-fitness history.
+        """
+        all_best_histories: List[List[float]] = []
+
+        for r in range(N_RUNS):
+            # unique seed per (setting, replicate)
+            seed = base_seed + seed_offset_base + r
+            best_hist, _ = run_experiment(seed=seed, **run_kwargs)
+            all_best_histories.append(best_hist)
+
+        # element-wise average over runs
+        avg_best = [
+            sum(gen_vals) / len(gen_vals)
+            for gen_vals in zip(*all_best_histories)
+        ]
+        return avg_best
+
     # ---------------- Experiment 1: mutation rate ----------------
     plt.figure()
     for i, mut in enumerate(args.mutation_grid):
-        best_hist, _ = run_experiment(
-            pop_size=100,
-            generations=args.generations,
-            tournament_k=3,
-            crossover_rate=args.crossover_rate,
-            mutation_rate_gene=mut,
-            same_class_prob=args.same_class_prob,
-            elitism=args.elitism,
-            forced_slugs=args.force,
-            seed=base_seed + i,
+        # give each hyperparameter value its own block of seeds
+        seed_offset_base = 1000 * i
+
+        avg_best_hist = average_best_over_runs(
+            seed_offset_base=seed_offset_base,
+            run_kwargs=dict(
+                pop_size=100,
+                generations=args.generations,
+                tournament_k=3,
+                crossover_rate=args.crossover_rate,
+                mutation_rate_gene=mut,
+                same_class_prob=args.same_class_prob,
+                elitism=args.elitism,
+                forced_slugs=args.force,
+            ),
         )
-        plt.plot(best_hist, label=f"mutation={mut}")
+        plt.plot(avg_best_hist, label=f"mutation={mut}")
 
     plt.xlabel("Generation")
-    plt.ylabel("Best fitness")
+    plt.ylabel("Best fitness (avg of %d runs)" % N_RUNS)
     plt.title("Effect of mutation rate on best fitness")
     plt.legend()
     plt.tight_layout()
@@ -173,21 +209,25 @@ def main():
     # ---------------- Experiment 2: population size ----------------
     plt.figure()
     for i, pop in enumerate(args.popsize_grid):
-        best_hist, _ = run_experiment(
-            pop_size=pop,
-            generations=args.generations,
-            tournament_k=3,
-            crossover_rate=args.crossover_rate,
-            mutation_rate_gene=0.1,
-            same_class_prob=args.same_class_prob,
-            elitism=args.elitism,
-            forced_slugs=args.force,
-            seed=base_seed + 100 + i,
+        seed_offset_base = 10000 + 1000 * i  # different region than experiment 1
+
+        avg_best_hist = average_best_over_runs(
+            seed_offset_base=seed_offset_base,
+            run_kwargs=dict(
+                pop_size=pop,
+                generations=args.generations,
+                tournament_k=3,
+                crossover_rate=args.crossover_rate,
+                mutation_rate_gene=0.1,
+                same_class_prob=args.same_class_prob,
+                elitism=args.elitism,
+                forced_slugs=args.force,
+            ),
         )
-        plt.plot(best_hist, label=f"pop={pop}")
+        plt.plot(avg_best_hist, label=f"pop={pop}")
 
     plt.xlabel("Generation")
-    plt.ylabel("Best fitness")
+    plt.ylabel("Best fitness (avg of %d runs)" % N_RUNS)
     plt.title("Effect of population size on best fitness")
     plt.legend()
     plt.tight_layout()
@@ -195,21 +235,25 @@ def main():
     # ---------------- Experiment 3: tournament k ----------------
     plt.figure()
     for i, k in enumerate(args.k_grid):
-        best_hist, _ = run_experiment(
-            pop_size=100,
-            generations=args.generations,
-            tournament_k=k,
-            crossover_rate=args.crossover_rate,
-            mutation_rate_gene=0.1,
-            same_class_prob=args.same_class_prob,
-            elitism=args.elitism,
-            forced_slugs=args.force,
-            seed=base_seed + 200 + i,
+        seed_offset_base = 20000 + 1000 * i  # different region than exp 1 & 2
+
+        avg_best_hist = average_best_over_runs(
+            seed_offset_base=seed_offset_base,
+            run_kwargs=dict(
+                pop_size=100,
+                generations=args.generations,
+                tournament_k=k,
+                crossover_rate=args.crossover_rate,
+                mutation_rate_gene=0.1,
+                same_class_prob=args.same_class_prob,
+                elitism=args.elitism,
+                forced_slugs=args.force,
+            ),
         )
-        plt.plot(best_hist, label=f"k={k}")
+        plt.plot(avg_best_hist, label=f"k={k}")
 
     plt.xlabel("Generation")
-    plt.ylabel("Best fitness")
+    plt.ylabel("Best fitness (avg of %d runs)" % N_RUNS)
     plt.title("Effect of tournament size k on best fitness")
     plt.legend()
     plt.tight_layout()

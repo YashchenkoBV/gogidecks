@@ -3,6 +3,11 @@
 from typing import Sequence, Tuple, List, Set
 import random
 import json
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+
 
 from fitness import (
     load_cards_and_indices,
@@ -12,7 +17,7 @@ from fitness import (
 )
 
 _cards, _slug_to_index = load_cards_and_indices()
-with open("classes.json", "r", encoding="utf-8") as f:
+with open(DATA_DIR / "classes.json", "r", encoding="utf-8") as f:
     _classes = json.load(f)
 
 _counter_matrix, _synergy_matrix = load_matrices()
@@ -403,9 +408,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pop-size", type=int, default=100)
+    parser.add_argument("--pop-size", type=int, default=150)
     parser.add_argument("--generations", type=int, default=200)
-    parser.add_argument("--tournament-k", type=int, default=20)
+    parser.add_argument("--tournament-k", type=int, default=7)
     parser.add_argument("--crossover-rate", type=float, default=0.9)
     parser.add_argument("--mutation-rate", type=float, default=0.05)
     parser.add_argument("--same-class-prob", type=float, default=0.8)
