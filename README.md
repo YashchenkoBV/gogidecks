@@ -35,3 +35,62 @@ For implementation of this fitness function, we would need to obtain a number of
 
 The theoretic basis for this project was partly inspired by
 Deck Building in Collectible Card Games using Genetic Algorithms: A Case Study of Legends of Code and Magic, 2021 IEEE Symposium Series on Computational Intelligence (SSCI) | 978-1-7281-9048-8/21/$31.00 ©2021 IEEE | DOI: 10.1109/SSCI50451.2021.9659984
+
+# Implementation
+
+## Step 1. Data collection and preprocessing
+
+The first step was to collect data about all cards in the game. The issue 
+here was that there are no open-source datasets storing up-to-date information about all Clash Royale cards. We even check Kaggle,
+but the most recent partially relevant data was updated more than 2 years ago.
+In order to retrieve names and cost (in mana) of all cards we used web scraping from [deckshop.pro](https://www.deckshop.pro/) --
+a benchmark-like service for evaluating Clash Royale decks and providing game advice. We also used web scraping to obtain 
+attack synergies and counter lists (what cards are countered by each card) from this website. This data, however, was not sufficient
+to implement a sophisticated enough fitness function. It was necessary to, somehow, be able to access information about class properties
+of every card, such as being a tank unit, air unit, anti-swarm unit, building unit, etc. Moreover, with as complicated balance system as
+it is currently in place in the game, being related to some class could not be encoded as a binary property. For example, card
+"miner" can be used in different contexts both as a tank and as an attack or defence spell! For this reason, and also because
+there are no existing datasets that would satisfy our requirements, we classified all cards by hand, setting for each card a value
+between 0 and 1 for 13 class-related parameters. We also introduced a win-condition parameter for each car, with values between 0 and 1.5, in
+order to encourage usage of particular cards, that were strongly connected to only a small amount of classes. In the same time,
+the attack synergy and counter data (the latter used to determine versatility of a deck) were written into index-based matrices, in which
+(i,j)-th entry meant card i works good with card j, or card i counters card j. In total, with mana cost and general 
+category (troop, spell, building, anti-building), each card has 17 parameters.
+
+## Step 2. Trying linear regression to understand fitness weights
+
+Our first thought was to design a linear fitness function on 17 parameters, each being a sum of corresponding parameters of deck cards.
+For synergy score, we counted pairs of cards in deck, which are present in synergy matrix. For versatility score,
+we, naturally, summed values in the 8 rows of counter matrix, corresponding to cards in the deck. We had, therefore, 17 weights of a linear
+function to determine. The obvious proceeding was to choose linear regression. For targets, we decided to hand-pick 50 popular Clash Royale decks
+of different class and winrate scores, based of official match-up statistic. We used the winrates as target values.
+
+
+However, we were quickly disenchanted by the obtained results, as approximately half of produced weights were negative.
+Even after forcing non-cost weights to be positive, the outcome still left a lot to be desired. Here is what we got:
+
+```bash
+Feature weights:
+cost : -0.792343
+tank : +3.462093
+air : +0.140046
+close-combat : +2.418437
+far-combat : +0.000000
+win-condition : +1.651011
+big-atk-spell : +6.415656
+small-atk-spell : +1.057580
+def-spell : +3.258826
+anti-air : +0.000000
+building : +1.471002
+spawn : +0.000000
+swarm : +0.000000
+anti-swarm : +0.000000
+anti-tank : +3.090190
+num_synergy_pairs : +0.878874
+total_counters : +0.012338
+```
+
+It is immediately obvious that these weights are not reasonable. For one thing, they completely disregard very important features such as anti-air and ranged (far-combat) units. Moreover, the model assigns a larger weight to defence spells (which are useful, but not absolutely essential in actual gameplay) than to win-conditions (one of the most important parameters in our model).
+
+There are two main reasons why this approach failed. First, a set of 50 decks is far too small to be representative enough for a reliable regression model. Hand-picking more decks was not an option, as it would require many hours of manual work. Second, the deck quality landscape we are trying to model is likely too complex to be accurately approximated by a purely linear function.
+
