@@ -15,7 +15,7 @@ SYNERGY_MATRIX_NPY = DATA_DIR / "synergy_matrix.npy"
 # These weights define ONLY what is being optimized
 OBJECTIVE_WEIGHTS = {
     "num_synergy_pairs": 0.5,
-    "total_counters": 0.02,
+    "total_counters": 0.03,
 }
 
 
