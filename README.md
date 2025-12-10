@@ -95,7 +95,38 @@ It is immediately obvious that these weights are not reasonable. For one thing, 
 There are two main reasons why this approach failed. First, a set of 50 decks is far too small to be representative enough for a reliable regression model. Hand-picking more decks was not an option, as it would require many hours of manual work. Second, the deck quality landscape we are trying to model is likely too complex to be accurately approximated by a purely linear function.
 
 ## Step 3.
-Because described above approaches couldn't work well enough (we check on both RoyaleAPI-based dataset with winrates and DeckShop evaluation data), we implemented non-linear logic and added hard-constaints (such as maximal number of cards assigned to some class). Fitness function was reworked to: 1) reward synergy and counter potential (linear combination of the number of pair in the deck also presented in the synergy table and the sum of number of cards countered by each of the cards in the deck - exactly this formulation, since it accounts possible overlaps), 2) punish unsufficient (by default, < 1) summary values of features such as tank, win-condition, anti-air etc., each by fixed value, 3) punish summary elixir cost if it is out of range - linear over margin value. So normal values of fitness function are small and positive. After that, genetic algorithm started to produce meaningful (in our opinion and by DeckShop evaluation) decks. Since the evaluation of fitness function by win rates failed, we decide to accept a new one without additional testing (however, we tuned the weights value).
+Because described above approaches couldn't work well enough (we check on both RoyaleAPI-based dataset with winrates and DeckShop evaluation data), we implemented non-linear logic and added hard-constaints (such as maximal number of cards assigned to some class). Fitness function was reworked to: 1) reward synergy and counter potential (linear combination of the number of pair in the deck also presented in the synergy table and the sum of number of cards countered by each of the cards in the deck - exactly this formulation, since it accounts possible overlaps), 2) punish unsufficient (by default, < 1.5) summary values of features such as tank, win-condition, anti-air etc., each by fixed value, 3) punish summary elixir cost if it is out of range (20-36) - linear over margin value. So normal values of fitness function are small and positive. 
+```
+# These weights define ONLY what is being optimized
+OBJECTIVE_WEIGHTS = {
+    "num_synergy_pairs": 0.5,
+    "total_counters": 0.03,
+}
+
+# These weights define ONLY what is being punished
+PENALTY_WEIGHTS = {
+    "cost": 0.5,
+    "tank": 1.0,
+    "air": 1.0,
+    "close-combat": 2.0,
+    "far-combat": 1.0,
+    "win-condition": 4.0,
+    "big-atk-spell": 2.0,
+    "small-atk-spell": 1.0,
+    "def-spell": 1.0,
+    "anti-air": 3.0,
+    "building": 1.0,
+    "spawn": 1.0,
+    "swarm": 1.0,
+    "anti-swarm": 2.0,
+    "anti-tank": 2.0,
+}
+
+TARGET_MIN_COST = 20
+TARGET_MAX_COST = 36
+FEATURE_MIN_VALUE = 1.5
+```
+After that, genetic algorithm started to produce meaningful (in our opinion and by DeckShop evaluation) decks. Since the evaluation of fitness function by win rates failed, we decide to accept a new one without additional testing (however, we tuned the weights value).
 
 # Genetic algorithm details
 In the final version, genetic algorithm uses class-defined mutations (for any card to mutate the probability of mutation into the card of the same class ("troop", "spell", "building", "anti-building" - troop attacking only buildings) is significantly - 0.8 over 0.2 - higher than mutation into the card of other class). Noteworthy, mutation rate controls the probability to mutate for each of the cards in the deck. We used basic tournament scheme for crossover (no preferences here, equal probabilities for each card, each crossover results in two children) and elitism (by default, 2 best chromosomes pass the generation). Obviously, we also applied non-redundancy constraint - a process resulting in the presence of more that one identical card in the same deck cannot happen. For the purpose of tuning the parameters of the genetic algorithm itself, we evaluated it on the benchmark (benchmark/ga_benchmark.py, measures k-size, population size, mutation rate) and set the best parameters by default.
